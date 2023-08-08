@@ -25,6 +25,9 @@
 #include <cam_sensor_io.h>
 #include "cam_debug_util.h"
 #include "cam_context.h"
+/* xiaomi add for cci debug start */
+#include "cam_cci_debug_util.h"
+/* xiaomi add for cci debug end */
 
 #define NUM_MASTERS 2
 #define NUM_QUEUES 2
@@ -109,6 +112,7 @@ struct cam_sensor_dev_res_info {
  * @last_applied_req: Last applied request id
  * @is_stopped_by_user: Indicate if sensor has been stopped by userland
  * @stream_off_after_eof: Indicates if sensor needs to stream off after eof
+ * @cci_debug: Sensor debugfs info and entry
  */
 struct cam_sensor_ctrl_t {
 	char                           device_name[CAM_CTX_DEV_NAME_MAX_LENGTH];
@@ -142,6 +146,9 @@ struct cam_sensor_ctrl_t {
 	int64_t                        last_applied_req;
 	bool                           is_stopped_by_user;
 	bool                           stream_off_after_eof;
+	/* xiaomi add for cci debug start */
+	void                          *cci_debug;
+	/* xiaomi add for cci debug end */
 };
 
 /**

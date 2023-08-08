@@ -15,7 +15,7 @@
 #define CAM_REQ_MGR_MAX_LINKED_DEV     16
 #define MAX_REQ_SLOTS                  48
 
-#define CAM_REQ_MGR_WATCHDOG_TIMEOUT          1000
+#define CAM_REQ_MGR_WATCHDOG_TIMEOUT          5000
 #define CAM_REQ_MGR_WATCHDOG_TIMEOUT_DEFAULT  5000
 #define CAM_REQ_MGR_WATCHDOG_TIMEOUT_MAX      50000
 #define CAM_REQ_MGR_SCHED_REQ_TIMEOUT         1000
@@ -39,7 +39,7 @@
 
 #define MAXIMUM_LINKS_PER_SESSION  4
 
-#define MAXIMUM_RETRY_ATTEMPTS 3
+#define MAXIMUM_RETRY_ATTEMPTS 6
 
 #define VERSION_1  1
 #define VERSION_2  2
@@ -411,6 +411,7 @@ struct cam_req_mgr_connected_device {
  * @wq_congestion        : Indicates if WQ congestion is detected or not
  * @try_for_internal_recovery : If the link stalls try for RT internal recovery
  * @properties_mask      : Indicates if current link enables some special properties
+ * cont_empty_slots     : Continuous empty slots
  */
 struct cam_req_mgr_core_link {
 	int32_t                              link_hdl;
@@ -451,6 +452,7 @@ struct cam_req_mgr_core_link {
 	bool                                 wq_congestion;
 	bool                                 try_for_internal_recovery;
 	uint32_t                             properties_mask;
+	uint32_t                             cont_empty_slots;
 };
 
 /**

@@ -3843,7 +3843,7 @@ end:
 static int cam_ife_hw_mgr_get_csid_rdi_for_sfe_ipp_input(
 	struct cam_ife_hw_mgr_ctx            *ife_ctx,
 	struct cam_isp_in_port_generic_info  *in_port,
-	uint32_t                              acquired_rdi_res)
+	uint32_t                             *acquired_rdi_res)
 {
 	struct cam_ife_hw_mgr   *hw_mgr;
 	uint32_t                 res_id = CAM_IFE_PIX_PATH_RES_MAX;
@@ -3854,7 +3854,7 @@ static int cam_ife_hw_mgr_get_csid_rdi_for_sfe_ipp_input(
 	if (hw_mgr->csid_hw_caps[0].sfe_ipp_input_rdi_res && !in_port->usage_type)
 		res_id = ffs(hw_mgr->csid_hw_caps[0].sfe_ipp_input_rdi_res) - 1;
 
-	if ((res_id != CAM_IFE_PIX_PATH_RES_MAX) && (!(BIT(res_id) & acquired_rdi_res))) {
+	if ((res_id != CAM_IFE_PIX_PATH_RES_MAX) && (!(BIT(res_id) & (*acquired_rdi_res)))) {
 		rc  = cam_ife_hw_mgr_acquire_csid_rdi_util(ife_ctx,
 			in_port, res_id, NULL);
 		if (rc) {
@@ -3862,6 +3862,7 @@ static int cam_ife_hw_mgr_get_csid_rdi_for_sfe_ipp_input(
 				ife_ctx->ctx_index, res_id, rc);
 			goto end;
 		}
+		*acquired_rdi_res |= BIT(res_id);
 	}
 
 	CAM_DBG(CAM_ISP, "Ctx: %d rdi_res:%d ctx_type %d rc %d", ife_ctx->ctx_index,
@@ -4730,7 +4731,7 @@ static int cam_ife_mgr_acquire_hw_for_ctx(
 	 */
 	if (ife_ctx->ctx_type == CAM_IFE_CTX_TYPE_SFE) {
 		rc = cam_ife_hw_mgr_get_csid_rdi_for_sfe_ipp_input(ife_ctx, in_port,
-			*acquired_rdi_res);
+			acquired_rdi_res);
 		if (rc) {
 			CAM_ERR(CAM_ISP, "Acquire RDI for SFE IPP failed Ctx: %d rc %d",
 				ife_ctx->ctx_index, rc);
@@ -6449,7 +6450,7 @@ static int cam_ife_mgr_config_hw(void *hw_mgr_priv,
 			(ctx->ctx_config & CAM_IFE_CTX_CFG_SW_SYNC_ON)) {
 			rem_jiffies = cam_common_wait_for_completion_timeout(
 				&ctx->config_done_complete,
-				msecs_to_jiffies(60));
+				msecs_to_jiffies(500));// xiaomi modified to enlarge cfg timeout
 			if (rem_jiffies == 0) {
 				CAM_ERR(CAM_ISP,
 					"config done completion timeout for req_id=%llu ctx_index %d",
@@ -11756,19 +11757,29 @@ static int cam_ife_mgr_prepare_hw_update(void *hw_mgr_priv,
 	if (prepare->num_out_map_entries &&
 		prepare->num_in_map_entries &&
 		ctx->flags.is_offline) {
+
+		uint32_t offlineIdx;
+		for (offlineIdx = 0; offlineIdx < ctx->num_base; offlineIdx++) {
+			if(ctx->ctx_type != CAM_IFE_CTX_TYPE_SFE &&
+				ctx->base[offlineIdx].hw_type == CAM_ISP_HW_TYPE_IFE_CSID)
+				break;
+			else if(ctx->ctx_type == CAM_IFE_CTX_TYPE_SFE &&
+				ctx->base[offlineIdx].hw_type == CAM_ISP_HW_TYPE_CSID)
+				break;
+		}
 		if (ctx->ctx_type != CAM_IFE_CTX_TYPE_SFE)
 			rc = cam_isp_add_go_cmd(prepare, &ctx->res_list_ife_in_rd,
-				ctx->base[i].idx, &prepare_hw_data->kmd_cmd_buff_info);
+				ctx->base[offlineIdx].idx, &prepare_hw_data->kmd_cmd_buff_info);
 		else
 			rc = cam_isp_add_csid_offline_cmd(prepare,
 				&ctx->res_list_ife_csid,
-				ctx->base[i].idx, &prepare_hw_data->kmd_cmd_buff_info);
+				ctx->base[offlineIdx].idx, &prepare_hw_data->kmd_cmd_buff_info);
 		if (rc)
 			CAM_ERR(CAM_ISP,
 				"Add %s GO_CMD faled i: %d, idx: %d, rc: %d",
 				(ctx->ctx_type == CAM_IFE_CTX_TYPE_SFE ?
 				"CSID" : "IFE RD"),
-				i, ctx->base[i].idx, rc);
+				i, ctx->base[offlineIdx].idx, rc);
 	}
 
 	if (prepare_hw_data->kmd_cmd_buff_info.size <=
