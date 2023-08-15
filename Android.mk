@@ -52,7 +52,7 @@ include $(DLKM_DIR)/AndroidKernelModule.mk
 # Include Camera UAPI Android.mk target to copy headers
 include $(LOCAL_PATH)/include/uapi/Android.mk
 else
-include $(DLKM_DIR)/Build_external_kernelmodule.mk
+
 endif
 include $(CLEAR_VARS)
 # For incremental compilation support.
@@ -68,7 +68,7 @@ LOCAL_SRC_FILES             :=  \
 LOCAL_MODULE_PATH           := $(KERNEL_MODULES_OUT)
 LOCAL_MODULE                := cameralog.ko
 LOCAL_MODULE_TAGS           := optional
-include $(DLKM_DIR)/Build_external_kernelmodule.mk
+
 
 
 endif # End of check for board platform
